@@ -21,7 +21,6 @@ export const NODE_SHADER = {
 
     uniform vec3 uColor;
     uniform float uTime;
-    uniform float uHover;
     uniform float uPulseFreq;
 
     void main() {
@@ -35,17 +34,14 @@ export const NODE_SHADER = {
       // Pulsing effect based on frequency and time
       float pulse = 0.75 + 0.25 * sin(uTime * uPulseFreq);
 
-      // Extra highlight factor when hovered
-      float highlight = mix(1.0, 1.6, uHover);
-
-      vec3 finalColor = uColor * pulse * highlight;
-      float alpha = fresnel * (0.35 + 0.65 * uHover) * pulse;
+      vec3 finalColor = uColor * pulse;
+      float alpha = fresnel * 0.35 * pulse;
 
       // Inner solid core glow
       float distToCenter = length(vPosition);
       float coreGlow = smoothstep(1.0, 0.0, distToCenter * 4.0);
 
-      gl_FragColor = vec4(finalColor + vec3(coreGlow * 0.4), alpha + coreGlow * 0.9 * uHover);
+      gl_FragColor = vec4(finalColor + vec3(coreGlow * 0.4), alpha);
     }
   `
 };

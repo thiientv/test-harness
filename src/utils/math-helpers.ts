@@ -30,7 +30,8 @@ export function generateSphericalPosition(
   centerZ: number = 0
 ): THREE.Vector3 {
   // Golden ratio spherical distribution for clean separation
-  const phi = Math.acos(1 - 2 * (index + 0.5) / total);
+  const ratio = total <= 0 ? 0 : 2 * (index + 0.5) / total;
+  const phi = Math.acos(1 - ratio);
   const theta = Math.PI * (1 + 5 ** 0.5) * index;
 
   const x = radius * Math.sin(phi) * Math.cos(theta) + centerX;

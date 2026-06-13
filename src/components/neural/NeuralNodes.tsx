@@ -5,6 +5,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useNeuralState } from '../../context/NeuralStateContext';
 import { NODE_SHADER } from './shaders';
+import { CLUSTER_CENTERS } from '../../utils/math-helpers';
 
 const tempObject = new THREE.Object3D();
 const mouseWorldPos = new THREE.Vector3();
@@ -20,7 +21,6 @@ export default function NeuralNodes() {
   const uniforms = useMemo(() => ({
     uColor: { value: new THREE.Color('#00f0ff') },
     uTime: { value: 0 },
-    uHover: { value: 0.0 }, // generic hover value
     uPulseFreq: { value: 2.0 }
   }), []);
 
@@ -51,8 +51,19 @@ export default function NeuralNodes() {
     // to simulate standard mouse push/pull physics
     mouseWorldPos.set(pointer.x, pointer.y, 0.5).unproject(camera);
     const dir = mouseWorldPos.clone().sub(camera.position).normalize();
-    const distance = -camera.position.z / dir.z; // project onto z=0 plane mostly
-    const mousePos3D = camera.position.clone().add(dir.multiplyScalar(distance));
+    
+    // Project ray onto dynamic section center plane in front of camera to avoid z=0 inversion bug
+    const categoryName = getCategoryFromIndex(activeSectionIndex);
+    const activeCenter = CLUSTER_CENTERS[categoryName as keyof typeof CLUSTER_CENTERS] || CLUSTER_CENTERS.core;
+
+    const targetPlane = new THREE.Plane();
+    const lookAtDir = new THREE.Vector3();
+    camera.getWorldDirection(lookAtDir);
+    targetPlane.setFromNormalAndCoplanarPoint(lookAtDir, activeCenter);
+
+    const mousePos3D = new THREE.Vector3();
+    raycaster.setFromCamera(pointer, camera);
+    raycaster.ray.intersectPlane(targetPlane, mousePos3D);
 
     // Dynamic node scale and displacement lerps
     nodes.forEach((node, i) => {
@@ -151,6 +162,7 @@ export default function NeuralNodes() {
 
   return (
     <instancedMesh
+      key={nodes.length}
       ref={meshRef}
       args={[new THREE.SphereGeometry(1, 16, 16), null as any, nodes.length]}
       onPointerMove={handlePointerMove}

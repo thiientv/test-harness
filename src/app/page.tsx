@@ -20,7 +20,16 @@ export default function Home() {
 
   useEffect(() => {
     // Run hardware verification check on client mount
-    setHasWebGL(isWebGLAvailable());
+    try {
+      const force2D = window.localStorage.getItem('force_2d_mode') === 'true';
+      if (force2D) {
+        setHasWebGL(false);
+      } else {
+        setHasWebGL(isWebGLAvailable());
+      }
+    } catch (e) {
+      setHasWebGL(isWebGLAvailable());
+    }
   }, []);
 
   // Show dark background while checking device capabilities

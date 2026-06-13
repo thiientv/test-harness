@@ -60,22 +60,47 @@ export default class ErrorBoundary extends Component<Props, State> {
           }}>
             <strong style={{ color: '#ff5b5b' }}>Traceback:</strong> {this.state.error?.message || this.state.error?.toString()}
           </div>
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              background: 'rgba(0, 240, 255, 0.08)',
-              border: '1px solid #00f0ff',
-              color: '#00f0ff',
-              padding: '12px 24px',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              transition: 'all 0.3s ease',
-              outline: 'none'
-            }}
-          >
-            Reinitialize Neural Engine
-          </button>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button
+              onClick={() => window.location.reload()}
+              style={{
+                background: 'rgba(0, 240, 255, 0.08)',
+                border: '1px solid #00f0ff',
+                color: '#00f0ff',
+                padding: '12px 24px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                transition: 'all 0.3s ease',
+                outline: 'none'
+              }}
+            >
+              Reinitialize Neural Engine
+            </button>
+            <button
+              onClick={() => {
+                try {
+                  window.localStorage.setItem('force_2d_mode', 'true');
+                  window.location.reload();
+                } catch (e) {
+                  console.error('Failed to set bypass flag', e);
+                }
+              }}
+              style={{
+                background: 'rgba(189, 0, 255, 0.08)',
+                border: '1px solid #bd00ff',
+                color: '#bd00ff',
+                padding: '12px 24px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                transition: 'all 0.3s ease',
+                outline: 'none'
+              }}
+            >
+              Bypass to 2D Layout
+            </button>
+          </div>
         </div>
       )
     }

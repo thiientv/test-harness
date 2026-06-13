@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
-import { cn, generateSphericalPosition, pseudoNoise } from './mathHelpers';
+import { cn, generateSphericalPosition, pseudoNoise } from './math-helpers';
 
-describe('mathHelpers', () => {
+describe('math-helpers', () => {
   describe('cn', () => {
     it('should merge tailwind classes correctly', () => {
       const result = cn('bg-red-500 text-white', 'bg-blue-500');
@@ -24,6 +24,16 @@ describe('mathHelpers', () => {
       // Validate that radius calculation roughly holds
       const distance = new THREE.Vector3(1, 2, 3).distanceTo(position);
       expect(distance).toBeCloseTo(5, 5);
+    });
+
+    it('should return a safe fallback and avoid NaN when total is 0 or negative', () => {
+      const position = generateSphericalPosition(0, 0, 5, 1, 2, 3);
+      expect(Number.isNaN(position.x)).toBe(false);
+      expect(Number.isNaN(position.y)).toBe(false);
+      expect(Number.isNaN(position.z)).toBe(false);
+      expect(position.x).toBe(1);
+      expect(position.y).toBe(2);
+      expect(position.z).toBe(8); // radius * cos(0) + centerZ = 5 * 1 + 3 = 8
     });
   });
 

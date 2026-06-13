@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { NeuralNode, SynapticPathway } from '../types/neural';
-import { generateNeuralNetwork } from '../utils/mathHelpers';
+import { generateNeuralNetwork } from '../utils/math-helpers';
 
 interface NeuralStateContextType {
   activeSectionIndex: number;

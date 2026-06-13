@@ -20,7 +20,8 @@ export default function ModernPageLayout() {
     setScrollPercentage(scrolled);
 
     // Calculate active section index based on scroll boundary offsets
-    const sectionIndex = Math.min(5, Math.floor(target.scrollTop / target.clientHeight + 0.5));
+    const clientHeight = target.clientHeight || 1;
+    const sectionIndex = Math.max(0, Math.min(5, Math.floor(target.scrollTop / clientHeight + 0.5)));
     setActiveSectionIndex(sectionIndex);
   };
 

@@ -4,7 +4,7 @@ import { useEffect, useRef, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useNeuralState } from '../../context/NeuralStateContext';
-import { CLUSTER_CENTERS } from '../../utils/mathHelpers';
+import { CLUSTER_CENTERS } from '../../utils/math-helpers';
 
 interface CameraControllerProps {
   controlsRef: React.MutableRefObject<any>;

@@ -2,7 +2,7 @@
 
 import React, { ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/utils/mathHelpers'; // Can map tailwind-merge helper
+import { cn } from '@/utils/math-helpers'; // Can map tailwind-merge helper
 
 interface GlassCardProps {
   children: ReactNode;
