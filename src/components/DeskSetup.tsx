@@ -2,6 +2,7 @@ import Monitor from './Monitor'
 import Keyboard from './Keyboard'
 import ServerRack from './ServerRack'
 import { TargetView } from '../App'
+import { NEON_THEME } from '../constants/theme'
 
 interface DeskSetupProps {
   currentView: TargetView
@@ -44,9 +45,9 @@ export default function DeskSetup({ currentView, onViewChange }: DeskSetupProps)
       {/* 4. Ambient desk LED light strips behind the desk */}
       <mesh position={[0, 0.76, -0.98]}>
         <boxGeometry args={[3.8, 0.02, 0.01]} />
-        <meshBasicMaterial color="var(--neon-purple)" />
+        <meshBasicMaterial color={NEON_THEME.purple} />
       </mesh>
-      <pointLight position={[0, 0.8, -1]} intensity={0.8} distance={2} color="var(--neon-purple)" />
+      <pointLight position={[0, 0.8, -1]} intensity={0.8} distance={2} color={NEON_THEME.purple} />
 
       {/* 5. Desk Accessories / Coffee Mug */}
       <mesh position={[1.6, 0.81, 0.5]} castShadow>

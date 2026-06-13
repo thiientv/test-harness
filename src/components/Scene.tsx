@@ -5,6 +5,7 @@ import GridFloor from './GridFloor'
 import DeskSetup from './DeskSetup'
 import CameraController from './CameraController'
 import { TargetView } from '../App'
+import { NEON_THEME } from '../constants/theme'
 
 interface SceneProps {
   currentView: TargetView
@@ -22,8 +23,8 @@ export default function Scene({ currentView, onViewChange }: SceneProps) {
     >
       {/* Lighting */}
       <ambientLight intensity={0.4} />
-      <pointLight position={[5, 5, 5]} intensity={0.5} color="var(--neon-cyan)" />
-      <pointLight position={[-5, 5, -5]} intensity={0.3} color="var(--neon-purple)" />
+      <pointLight position={[5, 5, 5]} intensity={0.5} color={NEON_THEME.cyan} />
+      <pointLight position={[-5, 5, -5]} intensity={0.3} color={NEON_THEME.purple} />
       
       {/* Dynamic Key Lighting to highlight Tabletop */}
       <spotLight

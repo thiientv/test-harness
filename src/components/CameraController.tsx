@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { TargetView } from '../App'
@@ -35,25 +35,30 @@ function damp3(target: THREE.Vector3, dest: THREE.Vector3, lambda: number, dt: n
 }
 
 export default function CameraController({ currentView, controlsRef }: CameraControllerProps) {
-  const targetPos = VIEW_CONFIGS[currentView].cameraPos
-  const targetLookAt = VIEW_CONFIGS[currentView].lookAt
+  const config = VIEW_CONFIGS[currentView] || VIEW_CONFIGS.home
+  const targetPos = config.cameraPos
+  const targetLookAt = config.lookAt
+  const isTransitioning = useRef(true)
 
   // If view target shifts, temporarily disable OrbitControls during transition
   useEffect(() => {
+    isTransitioning.current = true
     if (controlsRef.current) {
       controlsRef.current.enabled = false
-      // Reactivate controls after the transition (approx 800ms)
-      const t = setTimeout(() => {
-        if (controlsRef.current) {
-          controlsRef.current.enabled = true
-        }
-      }, 900)
-      return () => clearTimeout(t)
     }
-    return
+    // Reactivate controls after the transition (900ms)
+    const t = setTimeout(() => {
+      if (controlsRef.current) {
+        controlsRef.current.enabled = true
+      }
+      isTransitioning.current = false
+    }, 900)
+    return () => clearTimeout(t)
   }, [currentView, controlsRef])
 
   useFrame((state, delta) => {
+    if (!isTransitioning.current) return
+
     // 1. Interpolate position smoothly (frame-rate independent)
     damp3(state.camera.position, targetPos, 4.0, delta)
 

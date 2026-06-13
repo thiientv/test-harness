@@ -1,15 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Html } from '@react-three/drei'
 import { TargetView } from '../App'
+import { evaluateCommand, LogLine } from '../utils/terminalEvaluator'
+import { NEON_THEME } from '../constants/theme'
 
 interface MonitorProps {
   currentView: TargetView
   onViewChange: (view: TargetView) => void
-}
-
-interface LogLine {
-  text: string
-  type: 'input' | 'output' | 'error' | 'success'
 }
 
 export default function Monitor({ currentView, onViewChange }: MonitorProps) {
@@ -47,68 +44,15 @@ export default function Monitor({ currentView, onViewChange }: MonitorProps) {
     const rawCmd = inputVal.trim()
     if (!rawCmd) return
 
-    const newLogs = [...logs, { text: `$ ${rawCmd}`, type: 'input' as const }]
     const command = rawCmd.toLowerCase().split(' ')[0]
-
-    switch (command) {
-      case 'help':
-        newLogs.push(
-          { text: 'Available commands:', type: 'success' },
-          { text: '  about      - Display overview of developer profile', type: 'output' },
-          { text: '  skills     - Render skill stats matrix info', type: 'output' },
-          { text: '  projects   - Show repository server details', type: 'output' },
-          { text: '  clear      - Clear the console output history', type: 'output' },
-          { text: '  matrix     - Activate cyber screen rain demo', type: 'success' },
-          { text: '  exit       - Exit full screen focus view mode', type: 'output' }
-        )
-        break
-      case 'about':
-        newLogs.push(
-          { text: '=== DEVELOPER BIOGRAPHY ===', type: 'success' },
-          { text: 'Name: Agent Alex Mercer', type: 'output' },
-          { text: 'Role: Senior Full Stack / 3D Graphics Engineer', type: 'output' },
-          { text: 'Bio: Crafting next-generation immersive web interfaces with optimal speed', type: 'output' },
-          { text: '     and robust systems architectures.', type: 'output' }
-        )
-        break
-      case 'skills':
-        newLogs.push(
-          { text: '=== CORE TECH MATRIX ===', type: 'success' },
-          { text: '  - Frontend: React, TypeScript, Next.js, HTML5/CSS3', type: 'output' },
-          { text: '  - Immersive: Three.js, React Three Fiber, Custom Shaders', type: 'output' },
-          { text: '  - Backend: Node.js, Express, Go, Postgres, Docker', type: 'output' }
-        )
-        onViewChange('keyboard')
-        break
-      case 'projects':
-        newLogs.push(
-          { text: 'Routing system camera deck to server rack node logs...', type: 'output' }
-        )
-        onViewChange('server')
-        break
-      case 'clear':
-        setLogs([])
-        setInputVal('')
-        return
-      case 'matrix':
-        newLogs.push(
-          { text: 'Wake up, Alex...', type: 'error' },
-          { text: 'The Matrix has you...', type: 'error' },
-          { text: 'Follow the white rabbit. 🐇', type: 'error' }
-        )
-        break
-      case 'exit':
-        newLogs.push({ text: 'Exiting focus mode. Goodbye.', type: 'output' })
-        onViewChange('home')
-        break
-      default:
-        newLogs.push({
-          text: `Command not found: "${command}". Type "help" for support.`,
-          type: 'error',
-        })
+    if (command === 'clear') {
+      setLogs([])
+      setInputVal('')
+      return
     }
 
-    setLogs(newLogs)
+    const commandOutputs = evaluateCommand(rawCmd, onViewChange)
+    setLogs((prev) => [...prev, { text: `$ ${rawCmd}`, type: 'input' }, ...commandOutputs])
     setInputVal('')
   }
 
@@ -164,7 +108,7 @@ export default function Monitor({ currentView, onViewChange }: MonitorProps) {
       {hovered && !isFocused && (
         <mesh position={[0, 0.5, -0.155]}>
           <planeGeometry args={[1.64, 0.94]} />
-          <meshBasicMaterial color="var(--neon-cyan)" transparent opacity={0.6} />
+          <meshBasicMaterial color={NEON_THEME.cyan} transparent opacity={0.6} />
         </mesh>
       )}
 

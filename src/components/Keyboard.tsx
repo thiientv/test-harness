@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Html } from '@react-three/drei'
 import { TargetView } from '../App'
+import { NEON_THEME } from '../constants/theme'
 
 interface KeyboardProps {
   currentView: TargetView
@@ -28,7 +29,7 @@ export default function Keyboard({ currentView, onViewChange }: KeyboardProps) {
   const isFocused = currentView === 'keyboard'
 
   // Standard keyboard dimensions
-  // width: 0.8, depth: 0.3, height: 0.04
+  // width: 0.9, depth: 0.3, height: 0.05
   return (
     <group position={[0, 0.77, 0.4]}>
       {/* 1. Keyboard Case/Body */}
@@ -61,7 +62,7 @@ export default function Keyboard({ currentView, onViewChange }: KeyboardProps) {
       {hoveredBoard && !isFocused && (
         <mesh position={[0, -0.01, 0]}>
           <boxGeometry args={[0.94, 0.06, 0.34]} />
-          <meshBasicMaterial color="var(--neon-cyan)" transparent opacity={0.3} />
+          <meshBasicMaterial color={NEON_THEME.cyan} transparent opacity={0.3} />
         </mesh>
       )}
 
@@ -73,6 +74,10 @@ export default function Keyboard({ currentView, onViewChange }: KeyboardProps) {
         onPointerOver={(e) => {
           e.stopPropagation()
           setHoveredZone('esc')
+        }}
+        onPointerOut={(e) => {
+          e.stopPropagation()
+          setHoveredZone(null)
         }}
         onClick={(e) => {
           e.stopPropagation()
@@ -95,6 +100,10 @@ export default function Keyboard({ currentView, onViewChange }: KeyboardProps) {
           e.stopPropagation()
           setHoveredZone('numbers')
         }}
+        onPointerOut={(e) => {
+          e.stopPropagation()
+          setHoveredZone(null)
+        }}
         onClick={(e) => {
           e.stopPropagation()
           onViewChange('keyboard')
@@ -103,8 +112,8 @@ export default function Keyboard({ currentView, onViewChange }: KeyboardProps) {
       >
         <boxGeometry args={[0.54, 0.03, 0.06]} />
         <meshStandardMaterial
-          color={hoveredZone === 'numbers' ? 'var(--neon-cyan)' : '#0099aa'}
-          emissive={hoveredZone === 'numbers' ? 'var(--neon-cyan)' : '#002233'}
+          color={hoveredZone === 'numbers' ? NEON_THEME.cyan : '#0099aa'}
+          emissive={hoveredZone === 'numbers' ? NEON_THEME.cyan : '#002233'}
           emissiveIntensity={1.5}
         />
       </mesh>
@@ -116,6 +125,10 @@ export default function Keyboard({ currentView, onViewChange }: KeyboardProps) {
           e.stopPropagation()
           setHoveredZone('alphas')
         }}
+        onPointerOut={(e) => {
+          e.stopPropagation()
+          setHoveredZone(null)
+        }}
         onClick={(e) => {
           e.stopPropagation()
           onViewChange('keyboard')
@@ -124,8 +137,8 @@ export default function Keyboard({ currentView, onViewChange }: KeyboardProps) {
       >
         <boxGeometry args={[0.74, 0.03, 0.1]} />
         <meshStandardMaterial
-          color={hoveredZone === 'alphas' ? 'var(--neon-green)' : '#22aa11'}
-          emissive={hoveredZone === 'alphas' ? 'var(--neon-green)' : '#052200'}
+          color={hoveredZone === 'alphas' ? NEON_THEME.green : '#22aa11'}
+          emissive={hoveredZone === 'alphas' ? NEON_THEME.green : '#052200'}
           emissiveIntensity={1.5}
         />
       </mesh>
@@ -137,6 +150,10 @@ export default function Keyboard({ currentView, onViewChange }: KeyboardProps) {
           e.stopPropagation()
           setHoveredZone('space')
         }}
+        onPointerOut={(e) => {
+          e.stopPropagation()
+          setHoveredZone(null)
+        }}
         onClick={(e) => {
           e.stopPropagation()
           onViewChange('keyboard')
@@ -145,8 +162,8 @@ export default function Keyboard({ currentView, onViewChange }: KeyboardProps) {
       >
         <boxGeometry args={[0.6, 0.03, 0.06]} />
         <meshStandardMaterial
-          color={hoveredZone === 'space' ? 'var(--neon-purple)' : '#7700aa'}
-          emissive={hoveredZone === 'space' ? 'var(--neon-purple)' : '#220033'}
+          color={hoveredZone === 'space' ? NEON_THEME.purple : '#7700aa'}
+          emissive={hoveredZone === 'space' ? NEON_THEME.purple : '#220033'}
           emissiveIntensity={1.5}
         />
       </mesh>
@@ -170,10 +187,10 @@ export default function Keyboard({ currentView, onViewChange }: KeyboardProps) {
                 hoveredZone === 'esc'
                   ? '#ff3b3b'
                   : hoveredZone === 'numbers'
-                  ? 'var(--neon-cyan)'
+                  ? NEON_THEME.cyan
                   : hoveredZone === 'alphas'
-                  ? 'var(--neon-green)'
-                  : 'var(--neon-purple)'
+                  ? NEON_THEME.green
+                  : NEON_THEME.purple
               }`,
               boxShadow: `0 8px 32px 0 rgba(0,0,0,0.5)`,
               color: '#fff',
@@ -203,10 +220,10 @@ export default function Keyboard({ currentView, onViewChange }: KeyboardProps) {
                     hoveredZone === 'esc'
                       ? '#ff5b5b'
                       : hoveredZone === 'numbers'
-                      ? 'var(--neon-cyan)'
+                      ? NEON_THEME.cyan
                       : hoveredZone === 'alphas'
-                      ? 'var(--neon-green)'
-                      : 'var(--neon-purple)',
+                      ? NEON_THEME.green
+                      : NEON_THEME.purple,
                 }}
               >
                 {SKILL_DATA[hoveredZone].level}
@@ -226,7 +243,7 @@ export default function Keyboard({ currentView, onViewChange }: KeyboardProps) {
       {/* Instructions when not focused or hovered */}
       {!isFocused && !hoveredZone && hoveredBoard && (
         <Html position={[0, -0.1, 0.2]} center distanceFactor={1.2}>
-          <div style={{ padding: '4px 8px', borderRadius: '4px', background: 'rgba(0,0,0,0.85)', color: 'var(--neon-cyan)', border: '1px solid var(--neon-cyan)', fontSize: '9px', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', pointerEvents: 'none' }}>
+          <div style={{ padding: '4px 8px', borderRadius: '4px', background: 'rgba(0,0,0,0.85)', color: NEON_THEME.cyan, border: `1px solid ${NEON_THEME.cyan}`, fontSize: '9px', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', pointerEvents: 'none' }}>
             CLICK TO INSPECT KEYBOARD SKILLS
           </div>
         </Html>

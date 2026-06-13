@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Html } from '@react-three/drei'
 import { TargetView } from '../App'
 import { ExternalLink, Database, Cpu, Terminal, Sparkles } from 'lucide-react'
+import { NEON_THEME } from '../constants/theme'
 
 interface ServerRackProps {
   currentView: TargetView
@@ -94,7 +95,7 @@ export default function ServerRack({ currentView, onViewChange }: ServerRackProp
       {hovered && !isFocused && (
         <mesh position={[0, 0, 0]}>
           <boxGeometry args={[0.84, 1.24, 0.64]} />
-          <meshBasicMaterial color="var(--neon-purple)" transparent opacity={0.3} />
+          <meshBasicMaterial color={NEON_THEME.purple} transparent opacity={0.3} />
         </mesh>
       )}
 
@@ -102,6 +103,7 @@ export default function ServerRack({ currentView, onViewChange }: ServerRackProp
       {[0, 1, 2].map((idx) => {
         const yOffset = 0.35 - idx * 0.35
         const isActive = isFocused && activeProjectIdx === idx
+        const project = PROJECTS[idx] || PROJECTS[0] // Medium Issue 2 Safeguard
 
         return (
           <group key={idx} position={[0, yOffset, 0.01]}>
@@ -128,14 +130,14 @@ export default function ServerRack({ currentView, onViewChange }: ServerRackProp
             {/* Glowing Drawer separator/LED line */}
             <mesh position={[0, -0.13, 0.31]}>
               <boxGeometry args={[0.66, 0.015, 0.01]} />
-              <meshBasicMaterial color={isActive ? 'var(--neon-cyan)' : 'var(--neon-purple)'} />
+              <meshBasicMaterial color={isActive ? NEON_THEME.cyan : NEON_THEME.purple} />
             </mesh>
 
             {/* Blinking indicator LED lights (Green/Cyan/Red) */}
             <mesh position={[-0.28, 0.05, 0.31]}>
               <sphereGeometry args={[0.012, 8, 8]} />
               <meshBasicMaterial
-                color={PROJECTS[idx].state === 'online' ? 'var(--neon-green)' : PROJECTS[idx].state === 'syncing' ? 'var(--neon-cyan)' : '#ffa500'}
+                color={project.state === 'online' ? NEON_THEME.green : project.state === 'syncing' ? NEON_THEME.cyan : '#ffa500'}
               />
             </mesh>
             <mesh position={[-0.24, 0.05, 0.31]}>
@@ -217,11 +219,11 @@ export default function ServerRack({ currentView, onViewChange }: ServerRackProp
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--neon-purple)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Sparkles size={14} />
-                {PROJECTS[activeProjectIdx].title}
+                {(PROJECTS[activeProjectIdx] || PROJECTS[0]).title}
               </h3>
               
               <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '2px' }}>
-                {PROJECTS[activeProjectIdx].tech.map((t, index) => (
+                {(PROJECTS[activeProjectIdx] || PROJECTS[0]).tech.map((t, index) => (
                   <span
                     key={index}
                     style={{
@@ -239,7 +241,7 @@ export default function ServerRack({ currentView, onViewChange }: ServerRackProp
               </div>
 
               <p style={{ fontSize: '11px', color: '#cce', lineHeight: '1.4', marginTop: '6px' }}>
-                {PROJECTS[activeProjectIdx].desc}
+                {(PROJECTS[activeProjectIdx] || PROJECTS[0]).desc}
               </p>
             </div>
 
@@ -249,7 +251,7 @@ export default function ServerRack({ currentView, onViewChange }: ServerRackProp
                 <Terminal size={10} />
                 <span>UNIT_0{activeProjectIdx + 1} LIVE PROCESS LOGS:</span>
               </div>
-              {PROJECTS[activeProjectIdx].logs.map((log, i) => (
+              {(PROJECTS[activeProjectIdx] || PROJECTS[0]).logs.map((log, i) => (
                 <div key={i} style={{ fontFamily: 'var(--font-mono)', lineHeight: '1.3' }}>
                   {log}
                 </div>
@@ -261,7 +263,7 @@ export default function ServerRack({ currentView, onViewChange }: ServerRackProp
               href="#"
               onClick={(e) => {
                 e.preventDefault()
-                alert(`Clone repository target: https://github.com/agent-alex/${PROJECTS[activeProjectIdx].linkName}`)
+                alert(`Clone repository target: https://github.com/agent-alex/${(PROJECTS[activeProjectIdx] || PROJECTS[0]).linkName}`)
               }}
               style={{
                 textDecoration: 'none',
