@@ -2,15 +2,26 @@ import { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 // Figurines metadata array matching rich background colors and accents
+/**
+ * Represents metadata for a detailed 3D styled figurine card and layout colors.
+ */
 export interface Figurine {
   id: number;
+  /** Custom display name for the figurine card header */
   name: string;
+  /** Series taxonomy string, format: 'SERIES XX // TOY XX' */
   category: string;
+  /** Long copy describing the figurine specs and aesthetics */
   description: string;
+  /** Image source URL */
   imageUrl: string;
+  /** Hex code for base background color */
   bgColor: string;
+  /** Main accent styling color (hex) */
   accentColor: string;
+  /** Text color tailored to readability constraints of the background */
   textColor: string;
+  /** Low-opacity accent color for decorative panels and pill containers */
   panelColor: string;
 }
 
@@ -66,6 +77,7 @@ export default function App() {
   const [isAnimating, setIsAnimating] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [preloaded, setPreloaded] = useState(false);
+  const [imageErrors, setImageErrors] = useState<Record<number, boolean>>({});
   const imagePreloadRefs = useRef<HTMLImageElement[]>([]);
 
   // 1. Detect screen size (Mobile threshold = 640px)
@@ -83,7 +95,6 @@ export default function App() {
     let loadedCount = 0;
     const preloadList = IMAGES.map((item) => {
       const img = new Image();
-      img.src = item.imageUrl;
       img.onload = () => {
         loadedCount++;
         if (loadedCount === IMAGES.length) {
@@ -91,21 +102,32 @@ export default function App() {
         }
       };
       img.onerror = () => {
+        console.error(`Failed to preload image: ${item.imageUrl}`);
         loadedCount++;
         if (loadedCount === IMAGES.length) {
           setPreloaded(true);
         }
       };
+      img.src = item.imageUrl;
       return img;
     });
     imagePreloadRefs.current = preloadList;
 
     // Fail-safe timeout if loading takes too long
     const timer = setTimeout(() => {
+      if (loadedCount < IMAGES.length) {
+        console.warn("Preload timeout of 3s triggered before all assets retrieved.");
+      }
       setPreloaded(true);
     }, 3000);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      preloadList.forEach((img) => {
+        img.onload = null;
+        img.onerror = null;
+      });
+    };
   }, []);
 
   // 3. Navigation with state animation locking
@@ -125,11 +147,18 @@ export default function App() {
   };
 
   // 4. Calculate slide position state roles
+  /**
+   * Calculates the position state role of a slide relative to the active slide index.
+   * Works dynamically for any carousel length >= 3.
+   * 
+   * @param {number} index - Index of the figurine in the array
+   * @returns {'center' | 'left' | 'right' | 'back'} Visual role mapping
+   */
   const getRole = (index: number): 'center' | 'left' | 'right' | 'back' => {
     const diff = (index - activeIndex + IMAGES.length) % IMAGES.length;
     if (diff === 0) return 'center';
     if (diff === 1) return 'right';
-    if (diff === 3) return 'left';
+    if (diff === IMAGES.length - 1) return 'left';
     return 'back';
   };
 
@@ -202,13 +231,13 @@ export default function App() {
       </header>
 
       {/* Backdrop Typography */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 overflow-hidden">
-        <h1 
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 overflow-hidden" aria-hidden="true">
+        <div 
           className="font-display text-[15vw] sm:text-[18vw] leading-none select-none tracking-wider opacity-10 transition-colors duration-650"
           style={{ color: currentItem.accentColor }}
         >
           3D SHAPE
-        </h1>
+        </div>
       </div>
 
       {/* Interactive Figurine Carousel */}
@@ -244,12 +273,23 @@ export default function App() {
                   />
 
                   {/* Figure Image */}
-                  <img
-                    src={item.imageUrl}
-                    alt={item.name}
-                    className="h-[85%] w-auto object-contain absolute bottom-4 drop-shadow-[0_20px_40px_rgba(0,0,0,0.6)] transform group-hover:scale-105 transition-transform duration-500"
-                    draggable="false"
-                  />
+                  {imageErrors[item.id] ? (
+                    <div 
+                      style={{ color: item.accentColor }} 
+                      className="text-2xl font-display uppercase opacity-55 select-none text-center px-4"
+                      data-testid={`image-fallback-${item.id}`}
+                    >
+                      {item.name.split(' ').map(n => n[0]).join('')}
+                    </div>
+                  ) : (
+                    <img
+                      src={item.imageUrl}
+                      alt={item.name}
+                      onError={() => setImageErrors(prev => ({ ...prev, [item.id]: true }))}
+                      className="h-[85%] w-auto object-contain absolute bottom-4 drop-shadow-[0_20px_40px_rgba(0,0,0,0.6)] transform group-hover:scale-105 transition-transform duration-500"
+                      draggable="false"
+                    />
+                  )}
                 </div>
               </div>
             );
@@ -275,9 +315,9 @@ export default function App() {
           </div>
 
           <div className="space-y-2">
-            <h2 className="font-display text-4xl sm:text-5xl tracking-wide uppercase transition-colors duration-650" style={{ color: currentItem.textColor }}>
+            <h1 className="font-display text-4xl sm:text-5xl tracking-wide uppercase transition-colors duration-650" style={{ color: currentItem.textColor }}>
               {currentItem.name}
-            </h2>
+            </h1>
             <p className="text-sm font-sans tracking-wide text-white/70 leading-relaxed font-light">
               {currentItem.description}
             </p>

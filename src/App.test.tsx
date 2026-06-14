@@ -134,6 +134,75 @@ describe("TOONHUB Carousel Hero Section Tests", () => {
     expect(style3).toContain("blur(2px)");
   });
 
+  test("can navigate backward and wraps around active image index from 0 to last image index", async () => {
+    const { getByText, getByLabelText } = render(<App />);
+
+    await act(async () => {
+      await sleep(50);
+    });
+
+    const prevBtn = getByLabelText("Previous Figurine");
+
+    await act(async () => {
+      fireEvent.click(prevBtn);
+    });
+
+    // Wraps around to the final image item at index 3
+    expect(getByText(IMAGES[3].name)).toBeTruthy();
+  });
+
+  test("recovers and transitions layout opacity even if imagery fails to load", async () => {
+    const originalImage = globalThis.Image;
+
+    // Class simulating connection errors
+    class MockFailingImage {
+      public onerror: (() => void) | null = null;
+      set src(_val: string) {
+        setTimeout(() => {
+          if (this.onerror) this.onerror();
+        }, 10);
+      }
+    }
+    globalThis.Image = MockFailingImage as any;
+
+    const { getByTestId } = render(<App />);
+
+    await act(async () => {
+      await sleep(50);
+    });
+
+    const container = getByTestId("hero-container");
+    expect(container.className).toContain("opacity-100");
+
+    globalThis.Image = originalImage;
+  });
+
+  test("forces layout loading transition after 3-second fail-safe timeout is reached", async () => {
+    const originalImage = globalThis.Image;
+    class MockHangingImage {
+      set src(_val: string) {} // Never load
+    }
+    globalThis.Image = MockHangingImage as any;
+
+    const originalSetTimeout = globalThis.setTimeout;
+    globalThis.setTimeout = function(cb: Function, ms: number) {
+      if (ms === 3000) return originalSetTimeout(cb, 0); // speed up
+      return originalSetTimeout(cb, ms);
+    } as any;
+
+    const { getByTestId } = render(<App />);
+
+    await act(async () => {
+      await sleep(20);
+    });
+
+    const container = getByTestId("hero-container");
+    expect(container.className).toContain("opacity-100");
+
+    globalThis.Image = originalImage;
+    globalThis.setTimeout = originalSetTimeout;
+  });
+
   test("locks navigation during animation and works afterwards", async () => {
     const { getByText, getByLabelText } = render(<App />);
 
