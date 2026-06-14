@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Inter', sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6, .font-serif {
+    font-family: 'Playfair Display', serif;
+  }
+}
+
+@layer utilities {
+  /* Keyframes & Animations */
+  @keyframes heroReveal {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes heroFadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes heroZoom {
+    from {
+      transform: scale(1.1);
+    }
+    to {
+      transform: scale(1);
+    }
+  }
+
+  /* Helper Classes */
+  .animate-hero-reveal {
+    animation: heroReveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .animate-hero-fade-up {
+    opacity: 0;
+    animation: heroFadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .animate-hero-zoom {
+    animation: heroZoom 12s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  }
+}
+
+/* Custom styles for canvas mask layer */
+.mask-layer {
+  mask-repeat: no-repeat;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+}
