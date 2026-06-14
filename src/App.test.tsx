@@ -12,14 +12,22 @@ beforeAll(() => {
 
 describe('Lithos Hero Section', () => {
   let container: HTMLDivElement;
+  let originalGetContext: any;
+  let originalToDataURL: any;
 
   beforeEach(() => {
     container = document.createElement('div');
     document.body.appendChild(container);
+    // Keep reference to restore prototypes
+    originalGetContext = HTMLCanvasElement.prototype.getContext;
+    originalToDataURL = HTMLCanvasElement.prototype.toDataURL;
   });
 
   afterEach(() => {
     document.body.removeChild(container);
+    // Restore original prototype methods to prevent test leakage
+    HTMLCanvasElement.prototype.getContext = originalGetContext;
+    HTMLCanvasElement.prototype.toDataURL = originalToDataURL;
   });
 
   test('renders logo, text headings and layers list structure', async () => {
@@ -56,7 +64,7 @@ describe('Lithos Hero Section', () => {
     expect(span1).not.toBeNull();
   });
 
-  test('toggles mobile menu drawer on menu click', async () => {
+  test('toggles mobile menu drawer on menu click and handles close links', async () => {
     const root = createRoot(container);
     root.render(<App />);
 
@@ -74,6 +82,17 @@ describe('Lithos Hero Section', () => {
     // Verify it is interactive or updates layout
     const drawerNav = container.querySelector('.md\\:hidden nav');
     expect(drawerNav).not.toBeNull();
+
+    // Medium Issue 3: Untested Mobile Menu Close Action
+    const foldsLink = container.querySelector('.md\\:hidden nav a[href="#folds"]');
+    expect(foldsLink).not.toBeNull();
+    foldsLink?.dispatchEvent(new window.Event('click', { bubbles: true }));
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    // The drawer nav should no longer be present or rendered because isMobileMenuOpen is false
+    const drawerNavClosed = container.querySelector('.md\\:hidden nav');
+    expect(drawerNavClosed).toBeNull();
   });
 
   test('verifies custom canvas context fallback and coordinates update', async () => {
@@ -114,5 +133,92 @@ describe('Lithos Hero Section', () => {
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     expect(mockContextCreated).toBe(true);
+  });
+
+  test('does not crash and activates fallback when canvas context throws (Error Handling / High Issue 5)', async () => {
+    const originalWarn = console.warn;
+    let warnMockCalled = false;
+    console.warn = () => {
+      warnMockCalled = true;
+    };
+
+    HTMLCanvasElement.prototype.getContext = () => {
+      throw new Error('Canvas execution error simulation');
+    };
+
+    const root = createRoot(container);
+    root.render(<App />);
+
+    // Trigger updateMask via lifecycle mount
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const heroContainer = container.querySelector('.relative.w-full.h-\\[100dvh\\]');
+    expect(heroContainer).not.toBeNull();
+    
+    // Check if canvas-failed data attribute is correctly set to true
+    expect(heroContainer?.getAttribute('data-canvas-failed')).toBe('true');
+    expect(warnMockCalled).toBe(true);
+
+    console.warn = originalWarn;
+  });
+
+  test('updates active simulation layer preset on button toggle (Medium Issue 2)', async () => {
+    const root = createRoot(container);
+    root.render(<App />);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const heroContainer = container.querySelector('.relative.w-full.h-\\[100dvh\\]');
+    expect(heroContainer).not.toBeNull();
+    expect(heroContainer?.getAttribute('data-active-index')).toBe('0');
+
+    // Find Probe System desktop action button
+    const probeBtn = [...container.querySelectorAll('button')].find(
+      (btn) => btn.textContent?.trim() === 'Probe System'
+    );
+    expect(probeBtn).toBeDefined();
+
+    // Click it to toggle
+    probeBtn?.dispatchEvent(new window.Event('click', { bubbles: true }));
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(heroContainer?.getAttribute('data-active-index')).toBe('1');
+  });
+
+  test('handles canvas mouse leave transition behavior (Low Issue 3)', async () => {
+    const root = createRoot(container);
+    root.render(<App />);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const heroContainer = container.querySelector('.relative.w-full.h-\\[100dvh\\]');
+    expect(heroContainer).not.toBeNull();
+
+    // Move mouse to custom coords first
+    heroContainer?.dispatchEvent(
+      new window.MouseEvent('mousemove', {
+        clientX: 200,
+        clientY: 200,
+        bubbles: true
+      })
+    );
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Leaving container should revert target coordinates back to center (innerWidth / 2 = 512)
+    heroContainer?.dispatchEvent(
+      new window.MouseEvent('mouseleave', {
+        bubbles: true
+      })
+    );
+    // Let lerp tick settle
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
+    // Check footer coords text is centered (approx 512)
+    const footerSpan = container.querySelector('footer span');
+    expect(footerSpan).not.toBeNull();
+    // It should be near 512 due to center alignment
+    const xVal = Number(footerSpan?.textContent);
+    expect(xVal).toBeGreaterThan(500);
+    expect(xVal).toBeLessThan(525);
   });
 });

@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Menu, X, Compass, Layers, Globe } from 'lucide-react';
 
+/**
+ * Configuration schema representing a geographical or geological image layer.
+ */
 export interface ImageConfig {
   id: string;
   url: string;
@@ -23,6 +26,10 @@ export const IMAGES: ImageConfig[] = [
   }
 ];
 
+/**
+ * LithosLogo renders the custom geometric brand symbol.
+ * Includes accessibility tags (role/aria-hidden) to meet standards.
+ */
 export const LithosLogo = () => (
   <svg
     className="w-8 h-8 text-amber-500"
@@ -33,6 +40,8 @@ export const LithosLogo = () => (
     strokeLinecap="round"
     strokeLinejoin="round"
     data-testid="lithos-logo"
+    aria-hidden="true"
+    role="img"
   >
     <polygon points="12 2 2 22 22 22" />
     <line x1="12" y1="2" x2="12" y2="22" />
@@ -41,95 +50,132 @@ export const LithosLogo = () => (
   </svg>
 );
 
+/**
+ * App component renders the primary geological hero section.
+ * Utilizing direct DOM manipulation via refs for high-frequency cursor interactions
+ * to avoid Virtual DOM diffing overhead on every frame update.
+ */
 export default function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [maskDataUrl, setMaskDataUrl] = useState<string>('');
+  const [canvasFailed, setCanvasFailed] = useState(false);
   
-  // Use state to trigger canvas-based DOM re-evaluation when active Index changes (if we had tabs)
+  // Use state to track current active simulation preset to update container metadata
   const [activeIndex, setActiveIndex] = useState(0);
 
-  // Spotlight coordinates state
+  // Spotlight coordinates elements and tracking state
   const targetCoords = useRef({ x: 0, y: 0 });
   const currentCoords = useRef({ x: 0, y: 0 });
   const isMouseInWindow = useRef(false);
+  const canvasFailedRef = useRef(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const maskLayerRef = useRef<HTMLDivElement>(null);
+  const spotlightHaloRef = useRef<HTMLDivElement>(null);
+  const coordsTextRef = useRef<HTMLSpanElement>(null);
 
-  // Initialize target coordinates to the center of the window once mounted
-  useEffect(() => {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-    targetCoords.current = { x: width / 2, y: height / 2 };
-    currentCoords.current = { x: width / 2, y: height / 2 };
-    
-    // Draw initial spotlight center
-    updateMask(width / 2, height / 2);
-  }, []);
-
-  // Update/draw function for canvas gradient & mask DataURL
+  // Update/draw function for canvas gradient & mask
   const updateMask = (x: number, y: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    const spotlightRadius = Math.max(160, Math.min(window.innerWidth * 0.15, 260));
+
     try {
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+      if (canvasFailedRef.current) {
+        const fallbackMask = `radial-gradient(circle ${spotlightRadius}px at ${x}px ${y}px, black 100%, transparent)`;
+        if (maskLayerRef.current) {
+          maskLayerRef.current.style.maskImage = fallbackMask;
+          maskLayerRef.current.style.webkitMaskImage = fallbackMask;
+        }
+      } else {
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          throw new Error('Canvas 2D context is not available.');
+        }
 
-      const width = canvas.width;
-      const height = canvas.height;
+        const width = canvas.width;
+        const height = canvas.height;
 
-      // Clear previous canvas
-      ctx.clearRect(0, 0, width, height);
+        // Clear previous canvas
+        ctx.clearRect(0, 0, width, height);
 
-      // Create high contrast spotlight circle
-      // Outer mask requirements: transparent (alpha = 0) hides image, opaque (alpha = 1) reveals it
-      const spotlightRadius = Math.max(160, Math.min(window.innerWidth * 0.15, 260));
-      
-      const gradient = ctx.createRadialGradient(
-        x, y, 0, 
-        x, y, spotlightRadius
-      );
-      gradient.addColorStop(0, 'rgba(0, 0, 0, 1.0)');
-      gradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.7)');
-      gradient.addColorStop(1, 'rgba(0, 0, 0, 0.0)');
+        // Draw radial gradient spotlight
+        const gradient = ctx.createRadialGradient(x, y, 0, x, y, spotlightRadius);
+        gradient.addColorStop(0, 'rgba(0, 0, 0, 1.0)');
+        gradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.7)');
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0.0)');
 
-      ctx.fillStyle = gradient;
-      ctx.beginPath();
-      ctx.arc(x, y, spotlightRadius, 0, Math.PI * 2);
-      ctx.fill();
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(x, y, spotlightRadius, 0, Math.PI * 2);
+        ctx.fill();
 
-      const url = canvas.toDataURL();
-      setMaskDataUrl(url);
+        const url = canvas.toDataURL();
+        if (maskLayerRef.current) {
+          maskLayerRef.current.style.maskImage = `url(${url})`;
+          maskLayerRef.current.style.webkitMaskImage = `url(${url})`;
+        }
+      }
     } catch (err) {
-      console.warn("Failed to generate mask data URL", err);
+      // Under SSR, strict headless testing, happy-dom sandboxing, or CORS security contexts, the canvas API can throw
+      console.warn("Failed to generate mask data URL, falling back to CSS radial-gradient", err);
+      setCanvasFailed(true);
+      canvasFailedRef.current = true;
+
+      const fallbackMask = `radial-gradient(circle ${spotlightRadius}px at ${x}px ${y}px, black 100%, transparent)`;
+      if (maskLayerRef.current) {
+        maskLayerRef.current.style.maskImage = fallbackMask;
+        maskLayerRef.current.style.webkitMaskImage = fallbackMask;
+      }
+    }
+
+    // Decouple coordination data updates from canvas generation code (Issue 2)
+    if (spotlightHaloRef.current) {
+      spotlightHaloRef.current.style.left = `${x}px`;
+      spotlightHaloRef.current.style.top = `${y}px`;
+    }
+    if (coordsTextRef.current) {
+      coordsTextRef.current.textContent = String(Math.round(x));
     }
   };
 
-  // Canvas size sync
+  // Combine coordinate setup, canvas resize initialization, and initial baseline drawing (Issue 3)
   useEffect(() => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+
+    // Set canvas dimensions initially
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+    targetCoords.current = { x: centerX, y: centerY };
+    currentCoords.current = { x: centerX, y: centerY };
+
+    // Initial mask draw
+    updateMask(centerX, centerY);
+
+    // Setup window resize listener within same mount cycle
     const handleResize = () => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
       
       // If mouse is not in screen, keep spotlight centered
       if (!isMouseInWindow.current) {
         targetCoords.current = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+        currentCoords.current = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
       }
+
+      // Redraw immediately on resize to prevent stretching/disalignment (Medium Issue 1)
+      updateMask(currentCoords.current.x, currentCoords.current.y);
     };
 
     window.addEventListener('resize', handleResize);
-    handleResize();
 
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
-
-  // Mouse move and frame loop logic
-  useEffect(() => {
+    // Mouse move & frame loop logic
     const handleMouseMove = (e: MouseEvent) => {
       targetCoords.current = { x: e.clientX, y: e.clientY };
       isMouseInWindow.current = true;
@@ -147,12 +193,9 @@ export default function App() {
       currentCoords.current = { x: e.clientX, y: e.clientY };
     };
 
-    const container = containerRef.current;
-    if (container) {
-      container.addEventListener('mousemove', handleMouseMove, { passive: true });
-      container.addEventListener('mouseleave', handleMouseLeave);
-      container.addEventListener('mouseenter', handleMouseEnter);
-    }
+    container.addEventListener('mousemove', handleMouseMove, { passive: true });
+    container.addEventListener('mouseleave', handleMouseLeave);
+    container.addEventListener('mouseenter', handleMouseEnter);
 
     let animationFrameId: number;
 
@@ -160,7 +203,7 @@ export default function App() {
       const dx = targetCoords.current.x - currentCoords.current.x;
       const dy = targetCoords.current.y - currentCoords.current.y;
 
-      // Only perform costly canvas drawing & state update if coordinates haven't fully settled
+      // Only perform costly canvas drawing or style updates if coordinates haven't settled
       if (Math.abs(dx) > 0.05 || Math.abs(dy) > 0.05) {
         currentCoords.current.x += dx * 0.1; // Smooth 0.1 easing (lerping)
         currentCoords.current.y += dy * 0.1;
@@ -173,11 +216,10 @@ export default function App() {
     animationFrameId = requestAnimationFrame(tick);
 
     return () => {
-      if (container) {
-        container.removeEventListener('mousemove', handleMouseMove);
-        container.removeEventListener('mouseleave', handleMouseLeave);
-        container.removeEventListener('mouseenter', handleMouseEnter);
-      }
+      window.removeEventListener('resize', handleResize);
+      container.removeEventListener('mousemove', handleMouseMove);
+      container.removeEventListener('mouseleave', handleMouseLeave);
+      container.removeEventListener('mouseenter', handleMouseEnter);
       cancelAnimationFrame(animationFrameId);
     };
   }, []);
@@ -188,6 +230,7 @@ export default function App() {
       className="relative w-full h-[100dvh] overflow-hidden bg-neutral-950 font-sans text-neutral-200 select-none flex flex-col justify-between"
       style={{ contentVisibility: 'auto' }}
       data-active-index={activeIndex}
+      data-canvas-failed={canvasFailed}
     >
       {/* Hidden processing canvas to generate mask */}
       <canvas 
@@ -209,20 +252,18 @@ export default function App() {
 
       {/* Layer 2: Sediment Reveal Spotlight Overlay */}
       <div 
+        ref={maskLayerRef}
         className="absolute inset-0 w-full h-full bg-cover bg-center pointer-events-none mask-layer transition-all duration-150 ease-out"
         style={{ 
           backgroundImage: `url(${IMAGES[1].url})`,
-          maskImage: maskDataUrl ? `url(${maskDataUrl})` : 'none',
-          WebkitMaskImage: maskDataUrl ? `url(${maskDataUrl})` : 'none',
         }}
       />
 
       {/* Spotlight Halo visual enhancement (glowing border cursor guide) */}
       <div 
+        ref={spotlightHaloRef}
         className="absolute pointer-events-none rounded-full border border-amber-500/20 mix-blend-screen shadow-[0_0_60px_rgba(245,158,11,0.15)] transition-transform duration-100 ease-out -translate-x-1/2 -translate-y-1/2"
         style={{
-          left: `${currentCoords.current.x}px`,
-          top: `${currentCoords.current.y}px`,
           width: `${Math.max(160, Math.min(window.innerWidth * 0.15, 260)) * 2}px`,
           height: `${Math.max(160, Math.min(window.innerWidth * 0.15, 260)) * 2}px`,
         }}
@@ -363,7 +404,7 @@ export default function App() {
           <div>
             <h3 className="text-xs font-semibold tracking-wider text-neutral-300 uppercase">Core Data Active</h3>
             <p className="text-[11px] text-neutral-500 mt-1 leading-normal">
-              Revealing layered sandstone deposits at {Math.round(currentCoords.current.x)}px horizontal coordinates.
+              Revealing layered sandstone deposits at <span ref={coordsTextRef}>0</span>px horizontal coordinates.
             </p>
           </div>
         </div>
